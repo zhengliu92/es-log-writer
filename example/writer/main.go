@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -17,8 +18,8 @@ func main() {
 		BufferSize:    50,
 		FlushInterval: 3 * time.Second,
 		// 如果需要认证，可以设置以下字段
-		// Username: "elastic",
-		// Password: "password",
+		Username: "elastic",
+		Password: "my_elastic_password",
 		// 或者使用 API Key
 		// APIKey: "your-api-key",
 	}
@@ -30,12 +31,26 @@ func main() {
 	}
 	defer adapter.Close()
 
+	// 检查 Elasticsearch 连接是否正常
+	ctx := context.Background()
+	if err := adapter.Ping(ctx); err != nil {
+		logx.Errorf("Elasticsearch 连接检查失败: %v", err)
+		panic(fmt.Sprintf("无法连接到 Elasticsearch: %v", err))
+	}
+	logx.Info("Elasticsearch 连接检查成功")
+
 	// 设置 logx 使用 Elasticsearch Writer
-	logx.SetWriter(adapter)
+	// logx.SetWriter(adapter)
+
+	consoleWriter := logxadapter.NewConsoleWriter()
+
+	// 创建多路复用 Writer，同时写入控制台和 Elasticsearch
+	multiWriter := logxadapter.NewMultiWriter(consoleWriter, adapter)
+
+	// 设置 logx 使用多路复用 Writer
+	logx.SetWriter(multiWriter)
 
 	// 使用 logx 打印日志
-	ctx := context.Background()
-
 	logx.Info("这是一条 info 日志")
 	logx.Infow("这是一条带字段的日志", logx.Field("key1", "value1"), logx.Field("key2", 123))
 	logx.Error("这是一条 error 日志")

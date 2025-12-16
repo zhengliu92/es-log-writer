@@ -16,6 +16,8 @@ func main() {
 		IndexPrefix:   "go-zero-logs",
 		BufferSize:    50,
 		FlushInterval: 3 * time.Second,
+		Username:      "elastic",
+		Password:      "my_elastic_password",
 	}
 
 	// 创建 logx 适配器
@@ -25,8 +27,14 @@ func main() {
 	}
 	defer adapter.Close()
 
-	// 设置 logx 使用 Elasticsearch Writer
-	logx.SetWriter(adapter)
+	// 创建控制台 Writer
+	consoleWriter := logxadapter.NewConsoleWriter()
+
+	// 创建多路复用 Writer，同时写入控制台和 Elasticsearch
+	multiWriter := logxadapter.NewMultiWriter(consoleWriter, adapter)
+
+	// 设置 logx 使用多路复用 Writer
+	logx.SetWriter(multiWriter)
 
 	// 模拟 go-zero HTTP 中间件的日志格式
 	// 原始格式: 2025-12-16T15:58:24.202Z  info  [HTTP]  200  -  GET  /api/v1/metrics/range?window=3m - 192.168.31.1:64741 - Apifox/1.0.0 (https://apifox.com)  duration=20.6ms  caller=handler/loghandler.go:167  trace=5a98a59d88786b63d4605481b542dd83  span=4df29a5b1c46695d
@@ -43,6 +51,7 @@ func main() {
 		logx.Field("path", "/api/v1/metrics/range"),
 		logx.Field("client_ip", "192.168.31.1:64741"),
 		logx.Field("user_agent", "Apifox/1.0.0 (https://apifox.com)"),
+		logx.Field("custom_field", "custom_value"),
 	)
 
 	// 使用 context（如果有 trace context）

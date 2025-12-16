@@ -3,9 +3,8 @@
 package logx
 
 import (
-	"fmt"
+	"context"
 	"runtime"
-	"strings"
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -26,8 +25,7 @@ func NewAdapter(config *writer.Config) (*Adapter, error) {
 	return &Adapter{ElasticsearchWriter: w}, nil
 }
 
-// 以下方法实现 logx.Writer 接口
-
+// Alert 实现 logx.Writer 接口
 func (a *Adapter) Alert(v any) {
 	entry := writer.LogEntry{
 		Timestamp: time.Now().Format(time.RFC3339),
@@ -38,6 +36,7 @@ func (a *Adapter) Alert(v any) {
 	a.AddEntry(entry)
 }
 
+// Debug 实现 logx.Writer 接口
 func (a *Adapter) Debug(v any, fields ...logx.LogField) {
 	trace, span, duration := extractLogxFields(fields...)
 	entry := writer.LogEntry{
@@ -53,6 +52,7 @@ func (a *Adapter) Debug(v any, fields ...logx.LogField) {
 	a.AddEntry(entry)
 }
 
+// Error 实现 logx.Writer 接口
 func (a *Adapter) Error(v any, fields ...logx.LogField) {
 	trace, span, duration := extractLogxFields(fields...)
 	entry := writer.LogEntry{
@@ -68,6 +68,7 @@ func (a *Adapter) Error(v any, fields ...logx.LogField) {
 	a.AddEntry(entry)
 }
 
+// Info 实现 logx.Writer 接口
 func (a *Adapter) Info(v any, fields ...logx.LogField) {
 	trace, span, duration := extractLogxFields(fields...)
 	entry := writer.LogEntry{
@@ -83,6 +84,7 @@ func (a *Adapter) Info(v any, fields ...logx.LogField) {
 	a.AddEntry(entry)
 }
 
+// Severe 实现 logx.Writer 接口
 func (a *Adapter) Severe(v any) {
 	entry := writer.LogEntry{
 		Timestamp: time.Now().Format(time.RFC3339),
@@ -93,6 +95,7 @@ func (a *Adapter) Severe(v any) {
 	a.AddEntry(entry)
 }
 
+// Slow 实现 logx.Writer 接口
 func (a *Adapter) Slow(v any, fields ...logx.LogField) {
 	trace, span, duration := extractLogxFields(fields...)
 	entry := writer.LogEntry{
@@ -108,6 +111,7 @@ func (a *Adapter) Slow(v any, fields ...logx.LogField) {
 	a.AddEntry(entry)
 }
 
+// Stack 实现 logx.Writer 接口
 func (a *Adapter) Stack(v any) {
 	buf := make([]byte, 4096)
 	n := runtime.Stack(buf, false)
@@ -125,6 +129,7 @@ func (a *Adapter) Stack(v any) {
 	a.AddEntry(entry)
 }
 
+// Stat 实现 logx.Writer 接口
 func (a *Adapter) Stat(v any, fields ...logx.LogField) {
 	trace, span, duration := extractLogxFields(fields...)
 	entry := writer.LogEntry{
@@ -140,60 +145,12 @@ func (a *Adapter) Stat(v any, fields ...logx.LogField) {
 	a.AddEntry(entry)
 }
 
+// Close 关闭适配器
 func (a *Adapter) Close() error {
 	return a.ElasticsearchWriter.Close()
 }
 
-// 辅助函数
-
-func formatContent(v any) string {
-	switch val := v.(type) {
-	case string:
-		return val
-	case error:
-		return val.Error()
-	default:
-		return fmt.Sprintf("%v", val)
-	}
-}
-
-func convertLogxFields(fields ...logx.LogField) map[string]interface{} {
-	if len(fields) == 0 {
-		return nil
-	}
-	result := make(map[string]interface{})
-	for _, field := range fields {
-		result[field.Key] = field.Value
-	}
-	return result
-}
-
-func extractLogxFields(fields ...logx.LogField) (trace, span, duration string) {
-	for _, field := range fields {
-		switch field.Key {
-		case "trace":
-			trace = fmt.Sprintf("%v", field.Value)
-		case "span":
-			span = fmt.Sprintf("%v", field.Value)
-		case "duration":
-			if dur, ok := field.Value.(time.Duration); ok {
-				duration = dur.String()
-			} else {
-				duration = fmt.Sprintf("%v", field.Value)
-			}
-		}
-	}
-	return
-}
-
-func getCaller(skip int) string {
-	_, file, line, ok := runtime.Caller(skip + 1)
-	if !ok {
-		return ""
-	}
-	parts := strings.Split(file, "/")
-	if len(parts) > 0 {
-		file = parts[len(parts)-1]
-	}
-	return fmt.Sprintf("%s:%d", file, line)
+// Ping 检查 Elasticsearch 连接是否正常
+func (a *Adapter) Ping(ctx context.Context) error {
+	return a.ElasticsearchWriter.Ping(ctx)
 }

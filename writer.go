@@ -5,61 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"runtime"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/esapi"
 )
-
-// LogField 日志字段（自定义类型，不依赖 go-zero）
-type LogField struct {
-	Key   string
-	Value any
-}
-
-// Field 创建一个日志字段
-func Field(key string, value any) LogField {
-	return LogField{Key: key, Value: value}
-}
-
-// LogEntry 表示一条日志条目
-type LogEntry struct {
-	Timestamp string                 `json:"@timestamp"`
-	Level     string                 `json:"level"`
-	Content   string                 `json:"content"`
-	Caller    string                 `json:"caller,omitempty"`
-	Duration  string                 `json:"duration,omitempty"`
-	Trace     string                 `json:"trace,omitempty"`
-	Span      string                 `json:"span,omitempty"`
-	Fields    map[string]interface{} `json:"fields,omitempty"`
-}
-
-// Config Elasticsearch Writer 配置
-type Config struct {
-	Addresses     []string      `json:"addresses"`
-	Username      string        `json:"username,omitempty"`
-	Password      string        `json:"password,omitempty"`
-	APIKey        string        `json:"api_key,omitempty"`
-	IndexPrefix   string        `json:"index_prefix"`
-	BufferSize    int           `json:"buffer_size"`
-	FlushInterval time.Duration `json:"flush_interval"`
-	EnableSSL     bool          `json:"enable_ssl,omitempty"`
-	SkipSSLVerify bool          `json:"skip_ssl_verify,omitempty"`
-}
-
-// DefaultConfig 返回默认配置
-func DefaultConfig() *Config {
-	return &Config{
-		Addresses:     []string{"http://localhost:9200"},
-		IndexPrefix:   "go-zero-logs",
-		BufferSize:    100,
-		FlushInterval: 5 * time.Second,
-		EnableSSL:     false,
-	}
-}
 
 // ElasticsearchWriter 核心写入器（不依赖 go-zero）
 type ElasticsearchWriter struct {
@@ -164,6 +115,21 @@ func (w *ElasticsearchWriter) Warn(content any, fields ...LogField) {
 	w.Log("warn", content, fields...)
 }
 
+// Ping 检查 Elasticsearch 连接是否正常
+func (w *ElasticsearchWriter) Ping(ctx context.Context) error {
+	res, err := w.client.Info()
+	if err != nil {
+		return fmt.Errorf("failed to ping elasticsearch: %w", err)
+	}
+	defer res.Body.Close()
+
+	if res.IsError() {
+		return fmt.Errorf("elasticsearch ping failed: %s", res.String())
+	}
+
+	return nil
+}
+
 // Close 关闭写入器
 func (w *ElasticsearchWriter) Close() error {
 	w.cancel()
@@ -249,11 +215,13 @@ func (w *ElasticsearchWriter) flush() error {
 	return nil
 }
 
+// getIndexName 获取索引名称（按日期）
 func (w *ElasticsearchWriter) getIndexName() string {
 	today := time.Now().Format("2006.01.02")
 	return fmt.Sprintf("%s-%s", w.indexName, today)
 }
 
+// flushLoop 刷新循环（后台 goroutine）
 func (w *ElasticsearchWriter) flushLoop() {
 	defer w.wg.Done()
 
@@ -272,57 +240,3 @@ func (w *ElasticsearchWriter) flushLoop() {
 		}
 	}
 }
-
-// 辅助函数
-func formatContent(v any) string {
-	switch val := v.(type) {
-	case string:
-		return val
-	case error:
-		return val.Error()
-	default:
-		return fmt.Sprintf("%v", val)
-	}
-}
-
-func formatFields(fields ...LogField) map[string]interface{} {
-	if len(fields) == 0 {
-		return nil
-	}
-	result := make(map[string]interface{})
-	for _, field := range fields {
-		result[field.Key] = field.Value
-	}
-	return result
-}
-
-func extractSpecialFields(fields ...LogField) (trace, span, duration string) {
-	for _, field := range fields {
-		switch field.Key {
-		case "trace":
-			trace = fmt.Sprintf("%v", field.Value)
-		case "span":
-			span = fmt.Sprintf("%v", field.Value)
-		case "duration":
-			if dur, ok := field.Value.(time.Duration); ok {
-				duration = dur.String()
-			} else {
-				duration = fmt.Sprintf("%v", field.Value)
-			}
-		}
-	}
-	return
-}
-
-func getCaller(skip int) string {
-	_, file, line, ok := runtime.Caller(skip + 1)
-	if !ok {
-		return ""
-	}
-	parts := strings.Split(file, "/")
-	if len(parts) > 0 {
-		file = parts[len(parts)-1]
-	}
-	return fmt.Sprintf("%s:%d", file, line)
-}
-

@@ -1,0 +1,80 @@
+package logx
+
+import (
+	"fmt"
+	"os"
+	"strings"
+	"time"
+
+	"github.com/zeromicro/go-zero/core/logx"
+)
+
+// ConsoleWriter 控制台 Writer，将日志输出到标准输出
+type ConsoleWriter struct{}
+
+// NewConsoleWriter 创建一个控制台 Writer
+func NewConsoleWriter() *ConsoleWriter {
+	return &ConsoleWriter{}
+}
+
+// Alert 实现 logx.Writer 接口
+func (c *ConsoleWriter) Alert(v any) {
+	fmt.Fprintf(os.Stderr, "[ALERT] %v\n", v)
+}
+
+// Debug 实现 logx.Writer 接口
+func (c *ConsoleWriter) Debug(v any, fields ...logx.LogField) {
+	c.writeLog("DEBUG", v, fields...)
+}
+
+// Error 实现 logx.Writer 接口
+func (c *ConsoleWriter) Error(v any, fields ...logx.LogField) {
+	c.writeLog("ERROR", v, fields...)
+}
+
+// Info 实现 logx.Writer 接口
+func (c *ConsoleWriter) Info(v any, fields ...logx.LogField) {
+	c.writeLog("INFO", v, fields...)
+}
+
+// Severe 实现 logx.Writer 接口
+func (c *ConsoleWriter) Severe(v any) {
+	fmt.Fprintf(os.Stderr, "[SEVERE] %v\n", v)
+}
+
+// Slow 实现 logx.Writer 接口
+func (c *ConsoleWriter) Slow(v any, fields ...logx.LogField) {
+	c.writeLog("SLOW", v, fields...)
+}
+
+// Stack 实现 logx.Writer 接口
+func (c *ConsoleWriter) Stack(v any) {
+	fmt.Fprintf(os.Stderr, "[STACK] %v\n", v)
+}
+
+// Stat 实现 logx.Writer 接口
+func (c *ConsoleWriter) Stat(v any, fields ...logx.LogField) {
+	c.writeLog("STAT", v, fields...)
+}
+
+// Close 实现 Close 接口（控制台 Writer 不需要关闭）
+func (c *ConsoleWriter) Close() error {
+	return nil
+}
+
+// writeLog 辅助方法，格式化并输出日志
+func (c *ConsoleWriter) writeLog(level string, v any, fields ...logx.LogField) {
+	timestamp := time.Now().Format("2006-01-02 15:04:05.000")
+	content := formatContent(v)
+
+	var parts []string
+	parts = append(parts, fmt.Sprintf("[%s]", level))
+	parts = append(parts, timestamp)
+	parts = append(parts, content)
+
+	for _, field := range fields {
+		parts = append(parts, fmt.Sprintf("%s=%v", field.Key, field.Value))
+	}
+
+	fmt.Fprintf(os.Stdout, "%s\n", strings.Join(parts, " "))
+}
