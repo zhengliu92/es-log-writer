@@ -1,0 +1,55 @@
+package main
+
+import (
+	"context"
+	"time"
+
+	"github.com/zeromicro/go-zero/core/logx"
+	logwriter "github.com/zheng/log-writer"
+)
+
+func main() {
+	// 配置 Elasticsearch Writer
+	config := &logwriter.Config{
+		Addresses:     []string{"http://localhost:9200"},
+		IndexPrefix:   "go-zero-logs",
+		BufferSize:    50,
+		FlushInterval: 3 * time.Second,
+		// 如果需要认证，可以设置以下字段
+		// Username: "elastic",
+		// Password: "password",
+		// 或者使用 API Key
+		// APIKey: "your-api-key",
+	}
+
+	// 创建 Elasticsearch Writer
+	esWriter, err := logwriter.NewElasticsearchWriter(config)
+	if err != nil {
+		panic(err)
+	}
+	defer esWriter.Close()
+
+	// 设置 logx 使用 Elasticsearch Writer
+	logx.SetWriter(esWriter)
+
+	// 使用 logx 打印日志
+	ctx := context.Background()
+
+	logx.Info("这是一条 info 日志")
+	logx.Infow("这是一条带字段的日志", logx.Field("key1", "value1"), logx.Field("key2", 123))
+	logx.Error("这是一条 error 日志")
+	logx.Slow("这是一条 slow 日志")
+
+	// 使用 logc（带 context）
+	logx.WithContext(ctx).Info("使用 context 的日志")
+	logx.WithContext(ctx).Errorf("错误日志: %s", "某个错误")
+
+	// 模拟持续写入日志
+	for i := 0; i < 10; i++ {
+		logx.Infof("日志编号: %d", i)
+		time.Sleep(500 * time.Millisecond)
+	}
+
+	// 等待日志刷新
+	time.Sleep(5 * time.Second)
+}
