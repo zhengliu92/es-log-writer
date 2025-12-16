@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
-	writer "github.com/zheng/log-writer"
-	logxadapter "github.com/zheng/log-writer/logx"
+	writer "github.com/zheng/es-log-writer"
+	logxadapter "github.com/zheng/es-log-writer/logx"
 )
 
 func main() {

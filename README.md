@@ -1,4 +1,4 @@
-# log-writer
+# es-log-writer
 
 一个用于将日志同步写入 Elasticsearch 的 Golang 工具库。
 
@@ -18,7 +18,7 @@
 ## 安装
 
 ```bash
-go get github.com/zheng/log-writer
+go get github.com/zheng/es-log-writer
 ```
 
 ## 使用方式
@@ -30,7 +30,7 @@ package main
 
 import (
     "time"
-    writer "github.com/zheng/log-writer"
+    writer "github.com/zheng/es-log-writer"
 )
 
 func main() {
@@ -66,8 +66,8 @@ package main
 import (
     "time"
     "github.com/zeromicro/go-zero/core/logx"
-    writer "github.com/zheng/log-writer"
-    logxadapter "github.com/zheng/log-writer/logx"  // 适配器
+    writer "github.com/zheng/es-log-writer"
+    logxadapter "github.com/zheng/es-log-writer/logx"  // 适配器
 )
 
 func main() {
@@ -100,7 +100,7 @@ func main() {
 ## 包结构
 
 ```
-github.com/zheng/log-writer
+github.com/zheng/es-log-writer
 ├── core.go           # 核心库（不依赖 go-zero）
 └── logx/
     └── adapter.go    # go-zero logx.Writer 适配器
@@ -108,8 +108,8 @@ github.com/zheng/log-writer
 
 | 包 | 依赖 | 说明 |
 |---|------|------|
-| `github.com/zheng/log-writer` | 仅 Elasticsearch | 核心库，可独立使用 |
-| `github.com/zheng/log-writer/logx` | go-zero | logx.Writer 适配器 |
+| `github.com/zheng/es-log-writer` | 仅 Elasticsearch | 核心库，可独立使用 |
+| `github.com/zheng/es-log-writer/logx` | go-zero | logx.Writer 适配器 |
 
 ## 配置说明
 

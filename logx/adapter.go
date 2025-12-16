@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	writer "github.com/zheng/log-writer"
 	"github.com/zeromicro/go-zero/core/logx"
+	writer "github.com/zheng/es-log-writer"
 )
 
 // Adapter 将 ElasticsearchWriter 适配到 logx.Writer 接口
@@ -197,4 +197,3 @@ func getCaller(skip int) string {
 	}
 	return fmt.Sprintf("%s:%d", file, line)
 }
-

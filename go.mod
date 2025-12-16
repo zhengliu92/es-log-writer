@@ -1,4 +1,4 @@
-module github.com/zheng/log-writer
+module github.com/zhengliu92/es-log-writer
 
 go 1.21
 
