@@ -1,6 +1,6 @@
 module github.com/zheng/log-writer
 
-go 1.25
+go 1.21
 
 require (
 	github.com/elastic/go-elasticsearch/v8 v8.11.0

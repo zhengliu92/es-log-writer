@@ -5,12 +5,13 @@ import (
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
-	logwriter "github.com/zheng/log-writer"
+	writer "github.com/zheng/log-writer"
+	logxadapter "github.com/zheng/log-writer/logx"
 )
 
 func main() {
 	// 配置 Elasticsearch Writer
-	config := &logwriter.Config{
+	config := &writer.Config{
 		Addresses:     []string{"http://localhost:9200"},
 		IndexPrefix:   "go-zero-logs",
 		BufferSize:    50,
@@ -22,15 +23,15 @@ func main() {
 		// APIKey: "your-api-key",
 	}
 
-	// 创建 Elasticsearch Writer
-	esWriter, err := logwriter.NewElasticsearchWriter(config)
+	// 创建 logx 适配器
+	adapter, err := logxadapter.NewAdapter(config)
 	if err != nil {
 		panic(err)
 	}
-	defer esWriter.Close()
+	defer adapter.Close()
 
 	// 设置 logx 使用 Elasticsearch Writer
-	logx.SetWriter(esWriter)
+	logx.SetWriter(adapter)
 
 	// 使用 logx 打印日志
 	ctx := context.Background()

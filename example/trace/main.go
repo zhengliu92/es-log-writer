@@ -5,29 +5,30 @@ import (
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
-	logwriter "github.com/zheng/log-writer"
+	writer "github.com/zheng/log-writer"
+	logxadapter "github.com/zheng/log-writer/logx"
 )
 
 func main() {
 	// 配置 Elasticsearch Writer
-	config := &logwriter.Config{
+	config := &writer.Config{
 		Addresses:     []string{"http://localhost:9200"},
 		IndexPrefix:   "go-zero-logs",
 		BufferSize:    50,
 		FlushInterval: 3 * time.Second,
 	}
 
-	// 创建 Elasticsearch Writer
-	esWriter, err := logwriter.NewElasticsearchWriter(config)
+	// 创建 logx 适配器
+	adapter, err := logxadapter.NewAdapter(config)
 	if err != nil {
 		panic(err)
 	}
-	defer esWriter.Close()
+	defer adapter.Close()
 
 	// 设置 logx 使用 Elasticsearch Writer
-	logx.SetWriter(esWriter)
+	logx.SetWriter(adapter)
 
-	// 模拟你提供的日志格式
+	// 模拟 go-zero HTTP 中间件的日志格式
 	// 原始格式: 2025-12-16T15:58:24.202Z  info  [HTTP]  200  -  GET  /api/v1/metrics/range?window=3m - 192.168.31.1:64741 - Apifox/1.0.0 (https://apifox.com)  duration=20.6ms  caller=handler/loghandler.go:167  trace=5a98a59d88786b63d4605481b542dd83  span=4df29a5b1c46695d
 
 	// 使用 logx 打印带 trace 和 span 的日志

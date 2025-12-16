@@ -1,20 +1,19 @@
 # log-writer
 
-一个用于将 go-zero 的 logx 日志同步写入 Elasticsearch 的 Golang 工具库。
+一个用于将日志同步写入 Elasticsearch 的 Golang 工具库。
 
 ## 功能特性
 
-- ✅ 完整实现 `logx.Writer` 接口，无缝集成 go-zero 日志系统
-- ✅ 支持所有日志级别：Alert, Debug, Error, Info, Severe, Slow, Stack, Stat
+- ✅ **核心库不依赖 go-zero**，可独立使用
+- ✅ 提供 go-zero `logx.Writer` 适配器（可选）
 - ✅ 支持批量写入，提高性能
 - ✅ 自动按日期创建索引（格式：`{prefix}-{YYYY.MM.DD}`）
 - ✅ 支持缓冲区刷新机制，可配置刷新间隔和缓冲区大小
 - ✅ 支持 Elasticsearch 认证（用户名密码或 API Key）
-- ✅ 自动记录调用者信息（文件名和行号）
-- ✅ 支持日志字段（LogField）
+- ✅ 支持 trace/span 字段
 - ✅ 线程安全，支持并发写入
+- ✅ 异步写入，不阻塞业务代码
 - ✅ 优雅关闭，确保所有日志都被写入
-- ✅ **异步写入**：日志写入不阻塞业务代码
 
 ## 安装
 
@@ -22,70 +21,44 @@
 go get github.com/zheng/log-writer
 ```
 
-## 环境准备
+## 使用方式
 
-### 使用 Docker Compose 启动 Elasticsearch 和 Kibana
+### 方式一：独立使用（不依赖 go-zero）
 
-项目提供了两个 Docker Compose 配置文件：
+```go
+package main
 
-1. **docker-compose.yml** - 开发环境（无认证）
-   ```bash
-   docker-compose up -d
-   ```
+import (
+    "time"
+    writer "github.com/zheng/log-writer"
+)
 
-2. **docker-compose.secure.yml** - 生产环境（带认证）
-   ```bash
-   # 设置密码（可选，默认为 changeme）
-   export ELASTIC_PASSWORD=your-secure-password
-   docker-compose -f docker-compose.secure.yml up -d
-   ```
-
-启动后：
-- **Elasticsearch**: http://localhost:9200
-- **Kibana**: http://localhost:5601
-
-查看服务状态：
-```bash
-# 查看所有服务
-docker-compose ps
-
-# 查看 Elasticsearch 日志
-docker-compose logs -f elasticsearch
-
-# 查看 Kibana 日志
-docker-compose logs -f kibana
+func main() {
+    config := &writer.Config{
+        Addresses:     []string{"http://localhost:9200"},
+        IndexPrefix:   "app-logs",
+        BufferSize:    100,
+        FlushInterval: 5 * time.Second,
+    }
+    
+    w, err := writer.NewElasticsearchWriter(config)
+    if err != nil {
+        panic(err)
+    }
+    defer w.Close()
+    
+    // 直接使用
+    w.Info("用户登录成功")
+    w.Error("数据库连接失败")
+    w.Info("请求处理完成",
+        writer.Field("duration", 50*time.Millisecond),
+        writer.Field("trace", "abc123"),
+        writer.Field("user_id", 12345),
+    )
+}
 ```
 
-停止服务：
-```bash
-# 停止服务（保留数据）
-docker-compose down
-
-# 停止服务并删除数据卷
-docker-compose down -v
-```
-
-### 在 Kibana 中查看日志
-
-1. 打开 Kibana: http://localhost:5601
-2. 进入 **Stack Management** > **Index Patterns**
-3. 创建索引模式：`go-zero-logs-*`
-4. 选择时间字段：`@timestamp`
-5. 进入 **Discover** 查看日志
-
-### 验证 Elasticsearch 是否运行
-
-```bash
-# 无认证版本
-curl http://localhost:9200
-
-# 带认证版本
-curl -u elastic:changeme http://localhost:9200
-```
-
-## 快速开始
-
-### 基本使用
+### 方式二：配合 go-zero 使用（需要导入适配器）
 
 ```go
 package main
@@ -93,92 +66,50 @@ package main
 import (
     "time"
     "github.com/zeromicro/go-zero/core/logx"
-    logwriter "github.com/zheng/log-writer"
+    writer "github.com/zheng/log-writer"
+    logxadapter "github.com/zheng/log-writer/logx"  // 适配器
 )
 
 func main() {
-    // 创建 Elasticsearch Writer
-    config := &logwriter.Config{
+    config := &writer.Config{
         Addresses:     []string{"http://localhost:9200"},
         IndexPrefix:   "go-zero-logs",
         BufferSize:    100,
         FlushInterval: 5 * time.Second,
     }
     
-    esWriter, err := logwriter.NewElasticsearchWriter(config)
+    // 创建 logx 适配器
+    adapter, err := logxadapter.NewAdapter(config)
     if err != nil {
         panic(err)
     }
-    defer esWriter.Close()
+    defer adapter.Close()
     
     // 设置 logx 使用 Elasticsearch Writer
-    logx.SetWriter(esWriter)
+    logx.SetWriter(adapter)
     
     // 正常使用 logx
     logx.Info("日志内容")
+    logx.Infow("带字段的日志",
+        logx.Field("trace", "abc123"),
+        logx.Field("duration", 20*time.Millisecond),
+    )
 }
 ```
 
-### 使用认证（使用 docker-compose.secure.yml 时）
+## 包结构
 
-```go
-config := &logwriter.Config{
-    Addresses:   []string{"http://localhost:9200"},
-    IndexPrefix: "go-zero-logs",
-    Username:    "elastic",
-    Password:    "your-password", // 或使用环境变量 ELASTIC_PASSWORD
-}
+```
+github.com/zheng/log-writer
+├── core.go           # 核心库（不依赖 go-zero）
+└── logx/
+    └── adapter.go    # go-zero logx.Writer 适配器
 ```
 
-或使用 API Key：
-
-```go
-config := &logwriter.Config{
-    Addresses:   []string{"https://your-es-cluster:9200"},
-    IndexPrefix: "go-zero-logs",
-    APIKey:      "your-api-key",
-    EnableSSL:   true,
-}
-```
-
-### 与 go-zero 配置集成
-
-```go
-package main
-
-import (
-    "github.com/zeromicro/go-zero/core/conf"
-    "github.com/zeromicro/go-zero/core/logx"
-    logwriter "github.com/zheng/log-writer"
-)
-
-func main() {
-    // 加载 go-zero 配置
-    var c logx.LogConf
-    conf.MustLoad("config.yaml", &c)
-    logx.MustSetup(c)
-    
-    // 添加 Elasticsearch Writer（同时输出到文件和控制台）
-    esConfig := &logwriter.Config{
-        Addresses:     []string{"http://localhost:9200"},
-        IndexPrefix:   "go-zero-logs",
-        BufferSize:    100,
-        FlushInterval: 5 * time.Second,
-    }
-    
-    esWriter, err := logwriter.NewElasticsearchWriter(esConfig)
-    if err != nil {
-        panic(err)
-    }
-    defer esWriter.Close()
-    
-    // 添加额外的 Writer（不影响原有的文件输出）
-    logx.AddWriter(esWriter)
-    
-    // 正常使用 logx
-    logx.Info("日志内容")
-}
-```
+| 包 | 依赖 | 说明 |
+|---|------|------|
+| `github.com/zheng/log-writer` | 仅 Elasticsearch | 核心库，可独立使用 |
+| `github.com/zheng/log-writer/logx` | go-zero | logx.Writer 适配器 |
 
 ## 配置说明
 
@@ -193,40 +124,57 @@ func main() {
 | `IndexPrefix` | `string` | 索引名称前缀 | `"go-zero-logs"` |
 | `BufferSize` | `int` | 缓冲区大小，达到此大小后批量写入 | `100` |
 | `FlushInterval` | `time.Duration` | 刷新间隔，定期刷新缓冲区 | `5 * time.Second` |
-| `EnableSSL` | `bool` | 是否启用 SSL | `false` |
-| `SkipSSLVerify` | `bool` | SSL 跳过验证（仅用于开发环境） | `false` |
 
-### 索引命名规则
+## 核心库 API
 
-索引名称格式：`{IndexPrefix}-{YYYY.MM.DD}`
+```go
+// 创建写入器
+w, err := writer.NewElasticsearchWriter(config)
 
-例如：
-- 前缀为 `go-zero-logs`
-- 2024年1月15日的日志会写入索引：`go-zero-logs-2024.01.15`
+// 写入日志
+w.Info(content, fields...)
+w.Error(content, fields...)
+w.Debug(content, fields...)
+w.Warn(content, fields...)
+w.Log(level, content, fields...)
 
-## 性能优化
+// 创建字段
+writer.Field("key", value)
 
-1. **批量写入**：日志会先缓存在内存中，达到 `BufferSize` 或达到 `FlushInterval` 时批量写入 Elasticsearch
-2. **异步刷新**：后台协程定期刷新缓冲区，不影响主业务逻辑
-3. **可配置缓冲区**：根据日志量调整 `BufferSize` 和 `FlushInterval` 以平衡性能和实时性
+// 关闭
+w.Close()
+```
 
-## 注意事项
+## 存储格式
 
-1. **优雅关闭**：程序退出前务必调用 `Close()` 方法，确保所有日志都被写入
-2. **索引管理**：建议在 Elasticsearch 中配置索引生命周期策略（ILM）自动管理旧索引
-3. **性能影响**：虽然使用了批量写入和异步刷新，但仍可能对性能有轻微影响，建议在生产环境中进行压测
-4. **Docker 资源**：Elasticsearch 默认使用 512MB 内存，可根据需要调整 `ES_JAVA_OPTS` 环境变量
+日志在 Elasticsearch 中的存储格式：
+
+```json
+{
+  "@timestamp": "2025-12-17T10:30:00Z",
+  "level": "info",
+  "content": "[HTTP] 200 - GET /api/users",
+  "caller": "main.go:25",
+  "duration": "20ms",
+  "trace": "5a98a59d88786b63d4605481b542dd83",
+  "span": "4df29a5b1c46695d",
+  "fields": {
+    "status": 200,
+    "method": "GET"
+  }
+}
+```
 
 ## 示例
 
-完整示例请参考 [example/main.go](example/main.go)
+- [独立使用示例](example/standalone/main.go) - 不依赖 go-zero
+- [go-zero 集成示例](example/writer/main.go) - 配合 logx 使用
+- [Trace 示例](example/trace/main.go) - trace/span 字段
 
 ## 参考文档
 
 - [go-zero 日志文档](https://go-zero.dev/docs/tutorials/go-zero/log/overview)
 - [Elasticsearch Go Client](https://github.com/elastic/go-elasticsearch)
-- [Elasticsearch 官方文档](https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html)
-- [Kibana 官方文档](https://www.elastic.co/guide/en/kibana/current/index.html)
 
 ## License
 
