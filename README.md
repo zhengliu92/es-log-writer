@@ -18,7 +18,7 @@
 ## 安装
 
 ```bash
-go get github.com/zheng/es-log-writer
+go get github.com/zhengliu92/es-log-writer
 ```
 
 ## 使用方式
@@ -30,7 +30,7 @@ package main
 
 import (
     "time"
-    writer "github.com/zheng/es-log-writer"
+    writer "github.com/zhengliu92/es-log-writer"
 )
 
 func main() {
@@ -66,8 +66,8 @@ package main
 import (
     "time"
     "github.com/zeromicro/go-zero/core/logx"
-    writer "github.com/zheng/es-log-writer"
-    logxadapter "github.com/zheng/es-log-writer/logx"  // 适配器
+    writer "github.com/zhengliu92/es-log-writer"
+    logxadapter "github.com/zhengliu92/es-log-writer/logx"  // 适配器
 )
 
 func main() {
@@ -100,7 +100,7 @@ func main() {
 ## 包结构
 
 ```
-github.com/zheng/es-log-writer
+github.com/zhengliu92/es-log-writer
 ├── core.go           # 核心库（不依赖 go-zero）
 └── logx/
     └── adapter.go    # go-zero logx.Writer 适配器
@@ -108,8 +108,8 @@ github.com/zheng/es-log-writer
 
 | 包 | 依赖 | 说明 |
 |---|------|------|
-| `github.com/zheng/es-log-writer` | 仅 Elasticsearch | 核心库，可独立使用 |
-| `github.com/zheng/es-log-writer/logx` | go-zero | logx.Writer 适配器 |
+| `github.com/zhengliu92/es-log-writer` | 仅 Elasticsearch | 核心库，可独立使用 |
+| `github.com/zhengliu92/es-log-writer/logx` | go-zero | logx.Writer 适配器 |
 
 ## 配置说明
 
@@ -164,6 +164,36 @@ w.Close()
   }
 }
 ```
+
+## Elasticsearch 数据结构定义
+
+在使用本库前，建议在 Elasticsearch 中创建索引模板，以确保正确的字段映射。
+
+### 快速设置（使用索引模板）
+
+```bash
+# 使用提供的模板文件
+curl -X PUT "localhost:9200/_index_template/logs-template" \
+  -H 'Content-Type: application/json' \
+  -d @elasticsearch-template.json
+```
+
+### 字段映射说明
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `@timestamp` | `date` | 时间戳（RFC3339 格式） |
+| `level` | `keyword` | 日志级别（支持精确匹配和聚合） |
+| `content` | `text` + `keyword` | 日志内容（支持全文搜索和精确匹配） |
+| `caller` | `keyword` | 调用位置 |
+| `duration` | `keyword` | 持续时间 |
+| `trace` | `keyword` | 追踪 ID |
+| `span` | `keyword` | Span ID |
+| `fields` | `object` | 动态字段（用户自定义） |
+
+详细设置说明请参考：
+- [ELASTICSEARCH_SETUP.md](ELASTICSEARCH_SETUP.md) - 基础数据结构定义
+- [CHINESE_ANALYZER.md](CHINESE_ANALYZER.md) - 中文分词配置（IK Analyzer）
 
 ## 示例
 
