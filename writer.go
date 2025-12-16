@@ -1,4 +1,4 @@
-package logwriter
+package writer
 
 import (
 	"bytes"
@@ -36,7 +36,9 @@ type LogEntry struct {
 	Content   string                 `json:"content"`
 	Caller    string                 `json:"caller,omitempty"`
 	Duration  string                 `json:"duration,omitempty"`
-	Fields    map[string]interface{} `json:"fields,omitempty"`
+	Trace     string                 `json:"trace,omitempty"`  // 追踪 ID
+	Span      string                 `json:"span,omitempty"`   // Span ID
+	Fields    map[string]interface{} `json:"fields,omitempty"` // 其他字段
 }
 
 // Config Elasticsearch Writer 配置
@@ -171,6 +173,25 @@ func (w *ElasticsearchWriter) formatFields(fields ...logx.LogField) map[string]i
 	return result
 }
 
+// extractSpecialFields 从 fields 中提取特殊字段（trace, span, duration 等）
+func (w *ElasticsearchWriter) extractSpecialFields(fields ...logx.LogField) (trace, span, duration string) {
+	for _, field := range fields {
+		switch field.Key {
+		case "trace":
+			trace = fmt.Sprintf("%v", field.Value)
+		case "span":
+			span = fmt.Sprintf("%v", field.Value)
+		case "duration":
+			if dur, ok := field.Value.(time.Duration); ok {
+				duration = dur.String()
+			} else {
+				duration = fmt.Sprintf("%v", field.Value)
+			}
+		}
+	}
+	return trace, span, duration
+}
+
 // getCaller 获取调用者信息
 func (w *ElasticsearchWriter) getCaller(skip int) string {
 	_, file, line, ok := runtime.Caller(skip + 1)
@@ -198,11 +219,15 @@ func (w *ElasticsearchWriter) Alert(v any) {
 
 // Debug 实现 logx.Writer 接口
 func (w *ElasticsearchWriter) Debug(v any, fields ...logx.LogField) {
+	trace, span, duration := w.extractSpecialFields(fields...)
 	entry := LogEntry{
 		Timestamp: time.Now().Format(time.RFC3339),
 		Level:     "debug",
 		Content:   w.formatContent(v),
 		Caller:    w.getCaller(1),
+		Duration:  duration,
+		Trace:     trace,
+		Span:      span,
 		Fields:    w.formatFields(fields...),
 	}
 	w.addEntry(entry)
@@ -210,11 +235,15 @@ func (w *ElasticsearchWriter) Debug(v any, fields ...logx.LogField) {
 
 // Error 实现 logx.Writer 接口
 func (w *ElasticsearchWriter) Error(v any, fields ...logx.LogField) {
+	trace, span, duration := w.extractSpecialFields(fields...)
 	entry := LogEntry{
 		Timestamp: time.Now().Format(time.RFC3339),
 		Level:     "error",
 		Content:   w.formatContent(v),
 		Caller:    w.getCaller(1),
+		Duration:  duration,
+		Trace:     trace,
+		Span:      span,
 		Fields:    w.formatFields(fields...),
 	}
 	w.addEntry(entry)
@@ -222,11 +251,15 @@ func (w *ElasticsearchWriter) Error(v any, fields ...logx.LogField) {
 
 // Info 实现 logx.Writer 接口
 func (w *ElasticsearchWriter) Info(v any, fields ...logx.LogField) {
+	trace, span, duration := w.extractSpecialFields(fields...)
 	entry := LogEntry{
 		Timestamp: time.Now().Format(time.RFC3339),
 		Level:     "info",
 		Content:   w.formatContent(v),
 		Caller:    w.getCaller(1),
+		Duration:  duration,
+		Trace:     trace,
+		Span:      span,
 		Fields:    w.formatFields(fields...),
 	}
 	w.addEntry(entry)
@@ -245,23 +278,16 @@ func (w *ElasticsearchWriter) Severe(v any) {
 
 // Slow 实现 logx.Writer 接口
 func (w *ElasticsearchWriter) Slow(v any, fields ...logx.LogField) {
+	trace, span, duration := w.extractSpecialFields(fields...)
 	entry := LogEntry{
 		Timestamp: time.Now().Format(time.RFC3339),
 		Level:     "slow",
 		Content:   w.formatContent(v),
 		Caller:    w.getCaller(1),
+		Duration:  duration,
+		Trace:     trace,
+		Span:      span,
 		Fields:    w.formatFields(fields...),
-	}
-	// 尝试从 fields 中提取 duration
-	for _, field := range fields {
-		if field.Key == "duration" {
-			if dur, ok := field.Value.(time.Duration); ok {
-				entry.Duration = dur.String()
-			} else {
-				entry.Duration = fmt.Sprintf("%v", field.Value)
-			}
-			break
-		}
 	}
 	w.addEntry(entry)
 }
@@ -287,11 +313,15 @@ func (w *ElasticsearchWriter) Stack(v any) {
 
 // Stat 实现 logx.Writer 接口
 func (w *ElasticsearchWriter) Stat(v any, fields ...logx.LogField) {
+	trace, span, duration := w.extractSpecialFields(fields...)
 	entry := LogEntry{
 		Timestamp: time.Now().Format(time.RFC3339),
 		Level:     "stat",
 		Content:   w.formatContent(v),
 		Caller:    w.getCaller(1),
+		Duration:  duration,
+		Trace:     trace,
+		Span:      span,
 		Fields:    w.formatFields(fields...),
 	}
 	w.addEntry(entry)
