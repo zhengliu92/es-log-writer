@@ -14,6 +14,8 @@
 - ✅ 线程安全，支持并发写入
 - ✅ 异步写入，不阻塞业务代码
 - ✅ 优雅关闭，确保所有日志都被写入
+- ✅ 提供 `MultiWriter`，支持同时输出到多个目标（控制台 + Elasticsearch）
+- ✅ 提供 `ConsoleWriter`，支持控制台输出
 
 ## 安装
 
@@ -97,19 +99,71 @@ func main() {
 }
 ```
 
+### 方式三：同时输出到控制台和 Elasticsearch（推荐用于开发环境）
+
+使用 `MultiWriter` 可以同时将日志输出到控制台和 Elasticsearch，方便开发调试：
+
+```go
+package main
+
+import (
+    "time"
+    "github.com/zeromicro/go-zero/core/logx"
+    writer "github.com/zhengliu92/es-log-writer"
+    logxadapter "github.com/zhengliu92/es-log-writer/logx"
+)
+
+func main() {
+    config := &writer.Config{
+        Addresses:     []string{"http://localhost:9200"},
+        IndexPrefix:   "go-zero-logs",
+        BufferSize:    100,
+        FlushInterval: 5 * time.Second,
+    }
+    
+    // 创建 Elasticsearch 适配器
+    adapter, err := logxadapter.NewAdapter(config)
+    if err != nil {
+        panic(err)
+    }
+    defer adapter.Close()
+    
+    // 创建控制台 Writer
+    consoleWriter := logxadapter.NewConsoleWriter()
+    
+    // 创建多路复用 Writer，同时写入控制台和 Elasticsearch
+    multiWriter := logxadapter.NewMultiWriter(consoleWriter, adapter)
+    
+    // 设置 logx 使用多路复用 Writer
+    logx.SetWriter(multiWriter)
+    
+    // 日志会同时输出到控制台和 Elasticsearch
+    logx.Info("这条日志会同时出现在控制台和 ES")
+    logx.Infow("带字段的日志",
+        logx.Field("trace", "abc123"),
+        logx.Field("duration", 20*time.Millisecond),
+    )
+}
+```
+
 ## 包结构
 
 ```
 github.com/zhengliu92/es-log-writer
-├── core.go           # 核心库（不依赖 go-zero）
+├── types.go          # 类型定义（LogField, LogEntry, Config）
+├── writer.go         # ElasticsearchWriter 核心实现
+├── utils.go          # 辅助函数
 └── logx/
-    └── adapter.go    # go-zero logx.Writer 适配器
+    ├── adapter.go    # go-zero logx.Writer 适配器（ES）
+    ├── console.go    # 控制台 Writer
+    ├── multi.go      # 多路复用 Writer
+    └── utils.go      # 辅助函数
 ```
 
 | 包 | 依赖 | 说明 |
 |---|------|------|
 | `github.com/zhengliu92/es-log-writer` | 仅 Elasticsearch | 核心库，可独立使用 |
-| `github.com/zhengliu92/es-log-writer/logx` | go-zero | logx.Writer 适配器 |
+| `github.com/zhengliu92/es-log-writer/logx` | go-zero | logx.Writer 适配器、ConsoleWriter、MultiWriter |
 
 ## 配置说明
 
@@ -141,8 +195,31 @@ w.Log(level, content, fields...)
 // 创建字段
 writer.Field("key", value)
 
+// 检查连接
+w.Ping(ctx)
+
 // 关闭
 w.Close()
+```
+
+## logx 适配器 API
+
+```go
+// 创建 ES 适配器
+adapter, err := logxadapter.NewAdapter(config)
+
+// 创建控制台 Writer
+consoleWriter := logxadapter.NewConsoleWriter()
+
+// 创建多路复用 Writer（可组合多个 Writer）
+multiWriter := logxadapter.NewMultiWriter(consoleWriter, adapter, ...)
+
+// 检查 ES 连接
+adapter.Ping(ctx)
+
+// 关闭
+adapter.Close()
+multiWriter.Close()  // 会关闭所有包含的 Writer
 ```
 
 ## 存储格式
@@ -198,8 +275,8 @@ curl -X PUT "localhost:9200/_index_template/logs-template" \
 ## 示例
 
 - [独立使用示例](example/standalone/main.go) - 不依赖 go-zero
-- [go-zero 集成示例](example/writer/main.go) - 配合 logx 使用
-- [Trace 示例](example/trace/main.go) - trace/span 字段
+- [go-zero 集成示例](example/writer/main.go) - 配合 logx 使用（仅 ES）
+- [Trace 示例](example/trace/main.go) - 使用 MultiWriter 同时输出到控制台和 ES，包含 trace/span 字段
 
 ## 参考文档
 
