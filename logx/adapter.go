@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
-	writer "github.com/zheng/es-log-writer"
+	writer "github.com/zhengliu92/es-log-writer"
 )
 
 // Adapter 将 ElasticsearchWriter 适配到 logx.Writer 接口

@@ -4,7 +4,7 @@ package main
 import (
 	"time"
 
-	writer "github.com/zheng/es-log-writer"
+	writer "github.com/zhengliu92/es-log-writer"
 )
 
 func main() {
