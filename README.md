@@ -27,6 +27,8 @@ go get github.com/zhengliu92/es-log-writer
 
 ### 方式一：独立使用（不依赖 go-zero）
 
+#### 1.1 仅使用 Elasticsearch Writer
+
 ```go
 package main
 
@@ -50,6 +52,49 @@ func main() {
     defer w.Close()
     
     // 直接使用
+    w.Info("用户登录成功")
+    w.Error("数据库连接失败")
+    w.Info("请求处理完成",
+        writer.Field("duration", 50*time.Millisecond),
+        writer.Field("trace", "abc123"),
+        writer.Field("user_id", 12345),
+    )
+}
+```
+
+#### 1.2 使用 MultiWriter 同时输出到控制台和 Elasticsearch
+
+```go
+package main
+
+import (
+    "time"
+    writer "github.com/zhengliu92/es-log-writer"
+)
+
+func main() {
+    config := &writer.Config{
+        Addresses:     []string{"http://localhost:9200"},
+        IndexPrefix:   "app-logs",
+        BufferSize:    100,
+        FlushInterval: 5 * time.Second,
+    }
+    
+    // 创建 Elasticsearch Writer
+    esWriter, err := writer.NewElasticsearchWriter(config)
+    if err != nil {
+        panic(err)
+    }
+    defer esWriter.Close()
+    
+    // 创建控制台 Writer
+    consoleWriter := writer.NewConsoleWriter()
+    
+    // 创建多路复用 Writer，同时输出到控制台和 Elasticsearch
+    w := writer.NewMultiWriter(consoleWriter, esWriter)
+    defer w.Close()
+    
+    // 日志会同时输出到控制台和 Elasticsearch
     w.Info("用户登录成功")
     w.Error("数据库连接失败")
     w.Info("请求处理完成",
@@ -150,13 +195,15 @@ func main() {
 
 ```
 github.com/zhengliu92/es-log-writer
-├── types.go          # 类型定义和接口（LogField, LogEntry, Config, FieldAccessor）
+├── types.go          # 类型定义和接口（LogField, LogEntry, Config, FieldAccessor, Writer）
 ├── writer.go         # ElasticsearchWriter 核心实现
+├── console.go        # ConsoleWriter 核心实现（不依赖 go-zero）
+├── multi.go          # MultiWriter 核心实现（不依赖 go-zero）
 ├── utils.go          # 工具函数（FormatContent, GetCaller, 字段转换/提取）
 └── logx/
     ├── adapter.go    # go-zero logx.Writer 适配器（ES）
-    ├── console.go    # 控制台 Writer
-    ├── multi.go      # 多路复用 Writer
+    ├── console.go    # 控制台 Writer（logx 适配器版本）
+    ├── multi.go      # 多路复用 Writer（logx 适配器版本）
     └── utils.go      # logx 字段适配工具函数
 ```
 
@@ -178,12 +225,20 @@ github.com/zhengliu92/es-log-writer
 | `IndexPrefix` | `string` | 索引名称前缀 | `"go-zero-logs"` |
 | `BufferSize` | `int` | 缓冲区大小，达到此大小后批量写入 | `100` |
 | `FlushInterval` | `time.Duration` | 刷新间隔，定期刷新缓冲区 | `5 * time.Second` |
+| `EnableSSL` | `bool` | 是否启用 SSL（可选） | `false` |
+| `SkipSSLVerify` | `bool` | 是否跳过 SSL 验证（可选） | `false` |
 
 ## 核心库 API
 
 ```go
-// 创建写入器
-w, err := writer.NewElasticsearchWriter(config)
+// 创建 Elasticsearch 写入器
+esWriter, err := writer.NewElasticsearchWriter(config)
+
+// 创建控制台写入器
+consoleWriter := writer.NewConsoleWriter()
+
+// 创建多路复用写入器
+multiWriter := writer.NewMultiWriter(consoleWriter, esWriter, ...)
 
 // 写入日志
 w.Info(content, fields...)
@@ -195,7 +250,7 @@ w.Log(level, content, fields...)
 // 创建字段
 writer.Field("key", value)
 
-// 检查连接
+// 检查连接（仅 ElasticsearchWriter）
 w.Ping(ctx)
 
 // 关闭

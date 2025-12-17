@@ -14,16 +14,25 @@ func main() {
 		IndexPrefix:   "app-logs",
 		BufferSize:    50,
 		FlushInterval: 3 * time.Second,
+		Username:      "elastic",
+		Password:      "my_elastic_password",
 	}
 
 	// 创建 Elasticsearch Writer（不依赖 go-zero）
-	w, err := writer.NewElasticsearchWriter(config)
+	esWriter, err := writer.NewElasticsearchWriter(config)
 	if err != nil {
 		panic(err)
 	}
+	defer esWriter.Close()
+
+	// 创建控制台 Writer
+	consoleWriter := writer.NewConsoleWriter()
+
+	// 创建多路复用 Writer，同时输出到控制台和 Elasticsearch
+	w := writer.NewMultiWriter(consoleWriter, esWriter)
 	defer w.Close()
 
-	// 直接使用 writer 打印日志
+	// 直接使用 writer 打印日志（会同时输出到控制台和 ES）
 	w.Info("这是一条 info 日志")
 	w.Error("这是一条 error 日志")
 	w.Debug("这是一条 debug 日志")
