@@ -150,14 +150,14 @@ func main() {
 
 ```
 github.com/zhengliu92/es-log-writer
-├── types.go          # 类型定义（LogField, LogEntry, Config）
+├── types.go          # 类型定义和接口（LogField, LogEntry, Config, FieldAccessor）
 ├── writer.go         # ElasticsearchWriter 核心实现
-├── utils.go          # 辅助函数
+├── utils.go          # 工具函数（FormatContent, GetCaller, 字段转换/提取）
 └── logx/
     ├── adapter.go    # go-zero logx.Writer 适配器（ES）
     ├── console.go    # 控制台 Writer
     ├── multi.go      # 多路复用 Writer
-    └── utils.go      # 辅助函数
+    └── utils.go      # logx 字段适配工具函数
 ```
 
 | 包 | 依赖 | 说明 |

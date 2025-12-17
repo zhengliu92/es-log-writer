@@ -2,10 +2,26 @@ package writer
 
 import "time"
 
+// FieldAccessor 字段访问接口，用于统一处理不同类型的字段
+type FieldAccessor interface {
+	GetKey() string
+	GetValue() interface{}
+}
+
 // LogField 日志字段（自定义类型，不依赖 go-zero）
 type LogField struct {
 	Key   string
 	Value any
+}
+
+// GetKey 实现 FieldAccessor 接口
+func (f LogField) GetKey() string {
+	return f.Key
+}
+
+// GetValue 实现 FieldAccessor 接口
+func (f LogField) GetValue() interface{} {
+	return f.Value
 }
 
 // Field 创建一个日志字段

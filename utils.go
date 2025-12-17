@@ -7,23 +7,7 @@ import (
 	"time"
 )
 
-// FieldAccessor 字段访问接口，用于统一处理不同类型的字段
-type FieldAccessor interface {
-	GetKey() string
-	GetValue() interface{}
-}
-
-// LogField 实现 FieldAccessor 接口
-func (f LogField) GetKey() string {
-	return f.Key
-}
-
-// LogField 实现 FieldAccessor 接口
-func (f LogField) GetValue() interface{} {
-	return f.Value
-}
-
-// formatContent 格式化内容为字符串
+// FormatContent 格式化内容为字符串
 func FormatContent(v any) string {
 	switch val := v.(type) {
 	case string:
