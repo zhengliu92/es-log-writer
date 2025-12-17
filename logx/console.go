@@ -20,42 +20,42 @@ func NewConsoleWriter() *ConsoleWriter {
 
 // Alert 实现 logx.Writer 接口
 func (c *ConsoleWriter) Alert(v any) {
-	fmt.Fprintf(os.Stderr, "[ALERT] %v\n", v)
+	c.log("alert", v)
 }
 
 // Debug 实现 logx.Writer 接口
 func (c *ConsoleWriter) Debug(v any, fields ...logx.LogField) {
-	c.writeLog("DEBUG", v, fields...)
+	c.log("debug", v, fields...)
 }
 
 // Error 实现 logx.Writer 接口
 func (c *ConsoleWriter) Error(v any, fields ...logx.LogField) {
-	c.writeLog("ERROR", v, fields...)
+	c.log("error", v, fields...)
 }
 
 // Info 实现 logx.Writer 接口
 func (c *ConsoleWriter) Info(v any, fields ...logx.LogField) {
-	c.writeLog("INFO", v, fields...)
+	c.log("info", v, fields...)
 }
 
 // Severe 实现 logx.Writer 接口
 func (c *ConsoleWriter) Severe(v any) {
-	fmt.Fprintf(os.Stderr, "[SEVERE] %v\n", v)
+	c.log("severe", v)
 }
 
 // Slow 实现 logx.Writer 接口
 func (c *ConsoleWriter) Slow(v any, fields ...logx.LogField) {
-	c.writeLog("SLOW", v, fields...)
+	c.log("slow", v, fields...)
 }
 
 // Stack 实现 logx.Writer 接口
 func (c *ConsoleWriter) Stack(v any) {
-	fmt.Fprintf(os.Stderr, "[STACK] %v\n", v)
+	c.log("stack", v)
 }
 
 // Stat 实现 logx.Writer 接口
 func (c *ConsoleWriter) Stat(v any, fields ...logx.LogField) {
-	c.writeLog("STAT", v, fields...)
+	c.log("stat", v, fields...)
 }
 
 // Close 实现 Close 接口（控制台 Writer 不需要关闭）
@@ -63,19 +63,28 @@ func (c *ConsoleWriter) Close() error {
 	return nil
 }
 
-// writeLog 辅助方法，格式化并输出日志
-func (c *ConsoleWriter) writeLog(level string, v any, fields ...logx.LogField) {
+// log 辅助方法，格式化并输出日志
+func (c *ConsoleWriter) log(level string, v any, fields ...logx.LogField) {
 	timestamp := time.Now().Format("2006-01-02 15:04:05.000")
 	content := writer.FormatContent(v)
+	caller := writer.GetCaller(2) // skip log and public methods
 
 	var parts []string
-	parts = append(parts, fmt.Sprintf("[%s]", level))
+	parts = append(parts, fmt.Sprintf("[%s]", strings.ToUpper(level)))
 	parts = append(parts, timestamp)
+	if caller != "" {
+		parts = append(parts, caller)
+	}
 	parts = append(parts, content)
 
 	for _, field := range fields {
 		parts = append(parts, fmt.Sprintf("%s=%v", field.Key, field.Value))
 	}
 
-	fmt.Fprintf(os.Stdout, "%s\n", strings.Join(parts, " "))
+	output := strings.Join(parts, " ")
+	if level == "alert" || level == "severe" || level == "stack" {
+		fmt.Fprintf(os.Stderr, "%s\n", output)
+	} else {
+		fmt.Fprintf(os.Stdout, "%s\n", output)
+	}
 }
