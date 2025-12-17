@@ -67,14 +67,10 @@ func (c *ConsoleWriter) Close() error {
 func (c *ConsoleWriter) log(level string, v any, fields ...logx.LogField) {
 	timestamp := time.Now().Format("2006-01-02 15:04:05.000")
 	content := writer.FormatContent(v)
-	caller := writer.GetCaller(2) // skip log and public methods
 
 	var parts []string
 	parts = append(parts, fmt.Sprintf("[%s]", strings.ToUpper(level)))
 	parts = append(parts, timestamp)
-	if caller != "" {
-		parts = append(parts, caller)
-	}
 	parts = append(parts, content)
 
 	for _, field := range fields {
