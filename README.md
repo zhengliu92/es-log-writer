@@ -16,7 +16,6 @@
 - ✅ 优雅关闭，确保所有日志都被写入
 - ✅ 提供 `MultiWriter`，支持同时输出到多个目标（控制台 + Elasticsearch）
 - ✅ 提供 `ConsoleWriter`，支持控制台输出（支持彩色输出，error/warn 输出到 stderr）
-- ✅ 自动提取调用者信息（文件名和行号）
 - ✅ 支持 go-zero 所有日志方法（Info, Error, Debug, Slow, Stat, Stack, Alert, Severe）
 
 ## 安装
@@ -369,7 +368,6 @@ multiWriter.Close()  // 会关闭所有包含的 Writer
   "@timestamp": "2025-12-17T10:30:00Z",
   "level": "info",
   "content": "[HTTP] 200 - GET /api/users",
-  "caller": "main.go:25",
   "duration": "20ms",
   "trace": "5a98a59d88786b63d4605481b542dd83",
   "span": "4df29a5b1c46695d",
@@ -388,7 +386,6 @@ multiWriter.Close()  // 会关闭所有包含的 Writer
 | `@timestamp` | `string` | 日志时间戳（RFC3339 格式） | 自动生成 |
 | `level` | `string` | 日志级别（info/error/debug/warn/slow/stat/stack/alert/severe） | 方法参数 |
 | `content` | `string` | 日志内容 | 方法参数 |
-| `caller` | `string` | 调用位置（文件名:行号） | 自动提取 |
 | `duration` | `string` | 持续时间（如 "20ms"） | 从字段中提取 |
 | `trace` | `string` | 追踪 ID | 从字段中提取 |
 | `span` | `string` | Span ID | 从字段中提取 |
@@ -424,7 +421,6 @@ curl -X PUT "localhost:9200/_index_template/logs-template" \
 | `@timestamp` | `date` | 时间戳（RFC3339 格式） |
 | `level` | `keyword` | 日志级别（支持精确匹配和聚合） |
 | `content` | `text` + `keyword` | 日志内容（支持全文搜索和精确匹配） |
-| `caller` | `keyword` | 调用位置 |
 | `duration` | `keyword` | 持续时间 |
 | `trace` | `keyword` | 追踪 ID |
 | `span` | `keyword` | Span ID |
