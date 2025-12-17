@@ -81,7 +81,7 @@ func NewElasticsearchWriter(config *Config) (*ElasticsearchWriter, error) {
 
 // Log 写入日志（核心方法）
 func (w *ElasticsearchWriter) Log(level string, content any, fields ...LogField) {
-	trace, span, duration := extractSpecialFields(fields...)
+	trace, span, duration := extractFields(fields)
 	entry := LogEntry{
 		Timestamp: time.Now().Format(time.RFC3339),
 		Level:     level,
@@ -90,7 +90,7 @@ func (w *ElasticsearchWriter) Log(level string, content any, fields ...LogField)
 		Duration:  duration,
 		Trace:     trace,
 		Span:      span,
-		Fields:    formatFields(fields...),
+		Fields:    convertFields(fields),
 	}
 	w.AddEntry(entry)
 }

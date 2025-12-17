@@ -25,90 +25,59 @@ func NewAdapter(config *writer.Config) (*Adapter, error) {
 	return &Adapter{ElasticsearchWriter: w}, nil
 }
 
+// createLogEntry 创建日志条目（辅助函数）
+func createLogEntry(level string, content any, callerSkip int, fields ...logx.LogField) writer.LogEntry {
+	trace, span, duration := extractLogxFields(fields...)
+	return writer.LogEntry{
+		Timestamp: time.Now().Format(time.RFC3339),
+		Level:     level,
+		Content:   writer.FormatContent(content),
+		Caller:    writer.GetCaller(callerSkip),
+		Duration:  duration,
+		Trace:     trace,
+		Span:      span,
+		Fields:    convertLogxFields(fields...),
+	}
+}
+
+// createSimpleLogEntry 创建简单日志条目（无字段）
+func createSimpleLogEntry(level string, content any, callerSkip int) writer.LogEntry {
+	return writer.LogEntry{
+		Timestamp: time.Now().Format(time.RFC3339),
+		Level:     level,
+		Content:   writer.FormatContent(content),
+		Caller:    writer.GetCaller(callerSkip),
+	}
+}
+
 // Alert 实现 logx.Writer 接口
 func (a *Adapter) Alert(v any) {
-	entry := writer.LogEntry{
-		Timestamp: time.Now().Format(time.RFC3339),
-		Level:     "alert",
-		Content:   writer.FormatContent(v),
-		Caller:    writer.GetCaller(1),
-	}
-	a.AddEntry(entry)
+	a.AddEntry(createSimpleLogEntry("alert", v, 1))
 }
 
 // Debug 实现 logx.Writer 接口
 func (a *Adapter) Debug(v any, fields ...logx.LogField) {
-	trace, span, duration := extractLogxFields(fields...)
-	entry := writer.LogEntry{
-		Timestamp: time.Now().Format(time.RFC3339),
-		Level:     "debug",
-		Content:   writer.FormatContent(v),
-		Caller:    writer.GetCaller(1),
-		Duration:  duration,
-		Trace:     trace,
-		Span:      span,
-		Fields:    convertLogxFields(fields...),
-	}
-	a.AddEntry(entry)
+	a.AddEntry(createLogEntry("debug", v, 1, fields...))
 }
 
 // Error 实现 logx.Writer 接口
 func (a *Adapter) Error(v any, fields ...logx.LogField) {
-	trace, span, duration := extractLogxFields(fields...)
-	entry := writer.LogEntry{
-		Timestamp: time.Now().Format(time.RFC3339),
-		Level:     "error",
-		Content:   writer.FormatContent(v),
-		Caller:    writer.GetCaller(1),
-		Duration:  duration,
-		Trace:     trace,
-		Span:      span,
-		Fields:    convertLogxFields(fields...),
-	}
-	a.AddEntry(entry)
+	a.AddEntry(createLogEntry("error", v, 1, fields...))
 }
 
 // Info 实现 logx.Writer 接口
 func (a *Adapter) Info(v any, fields ...logx.LogField) {
-	trace, span, duration := extractLogxFields(fields...)
-	entry := writer.LogEntry{
-		Timestamp: time.Now().Format(time.RFC3339),
-		Level:     "info",
-		Content:   writer.FormatContent(v),
-		Caller:    writer.GetCaller(1),
-		Duration:  duration,
-		Trace:     trace,
-		Span:      span,
-		Fields:    convertLogxFields(fields...),
-	}
-	a.AddEntry(entry)
+	a.AddEntry(createLogEntry("info", v, 1, fields...))
 }
 
 // Severe 实现 logx.Writer 接口
 func (a *Adapter) Severe(v any) {
-	entry := writer.LogEntry{
-		Timestamp: time.Now().Format(time.RFC3339),
-		Level:     "severe",
-		Content:   writer.FormatContent(v),
-		Caller:    writer.GetCaller(1),
-	}
-	a.AddEntry(entry)
+	a.AddEntry(createSimpleLogEntry("severe", v, 1))
 }
 
 // Slow 实现 logx.Writer 接口
 func (a *Adapter) Slow(v any, fields ...logx.LogField) {
-	trace, span, duration := extractLogxFields(fields...)
-	entry := writer.LogEntry{
-		Timestamp: time.Now().Format(time.RFC3339),
-		Level:     "slow",
-		Content:   writer.FormatContent(v),
-		Caller:    writer.GetCaller(1),
-		Duration:  duration,
-		Trace:     trace,
-		Span:      span,
-		Fields:    convertLogxFields(fields...),
-	}
-	a.AddEntry(entry)
+	a.AddEntry(createLogEntry("slow", v, 1, fields...))
 }
 
 // Stack 实现 logx.Writer 接口
@@ -117,32 +86,16 @@ func (a *Adapter) Stack(v any) {
 	n := runtime.Stack(buf, false)
 	stackTrace := string(buf[:n])
 
-	entry := writer.LogEntry{
-		Timestamp: time.Now().Format(time.RFC3339),
-		Level:     "stack",
-		Content:   writer.FormatContent(v),
-		Caller:    writer.GetCaller(1),
-		Fields: map[string]interface{}{
-			"stack": stackTrace,
-		},
+	entry := createSimpleLogEntry("stack", v, 1)
+	entry.Fields = map[string]interface{}{
+		"stack": stackTrace,
 	}
 	a.AddEntry(entry)
 }
 
 // Stat 实现 logx.Writer 接口
 func (a *Adapter) Stat(v any, fields ...logx.LogField) {
-	trace, span, duration := extractLogxFields(fields...)
-	entry := writer.LogEntry{
-		Timestamp: time.Now().Format(time.RFC3339),
-		Level:     "stat",
-		Content:   writer.FormatContent(v),
-		Caller:    writer.GetCaller(1),
-		Duration:  duration,
-		Trace:     trace,
-		Span:      span,
-		Fields:    convertLogxFields(fields...),
-	}
-	a.AddEntry(entry)
+	a.AddEntry(createLogEntry("stat", v, 1, fields...))
 }
 
 // Close 关闭适配器

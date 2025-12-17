@@ -35,11 +35,6 @@ func FormatContent(v any) string {
 	}
 }
 
-// formatFields 将 LogField 切片转换为 map
-func formatFields(fields ...LogField) map[string]interface{} {
-	return convertFields(fields)
-}
-
 // convertFields 通用的字段转换函数，接受 FieldAccessor 切片
 func convertFields[T FieldAccessor](fields []T) map[string]interface{} {
 	if len(fields) == 0 {
@@ -55,11 +50,6 @@ func convertFields[T FieldAccessor](fields []T) map[string]interface{} {
 // ConvertFields 导出的通用字段转换函数，接受 FieldAccessor 切片
 func ConvertFields(fields []FieldAccessor) map[string]interface{} {
 	return convertFields(fields)
-}
-
-// extractSpecialFields 从字段中提取 trace、span、duration 特殊字段
-func extractSpecialFields(fields ...LogField) (trace, span, duration string) {
-	return extractFields(fields)
 }
 
 // extractFields 通用的字段提取函数，接受 FieldAccessor 切片

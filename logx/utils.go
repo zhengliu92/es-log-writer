@@ -18,20 +18,21 @@ func (a logxFieldAdapter) GetValue() interface{} {
 	return a.field.Value
 }
 
-// convertLogxFields 将 logx.LogField 切片转换为 map
-func convertLogxFields(fields ...logx.LogField) map[string]interface{} {
+// adaptLogxFields 将 logx.LogField 切片转换为 writer.FieldAccessor 切片
+func adaptLogxFields(fields ...logx.LogField) []writer.FieldAccessor {
 	adapters := make([]writer.FieldAccessor, len(fields))
 	for i, field := range fields {
 		adapters[i] = logxFieldAdapter{field: field}
 	}
-	return writer.ConvertFields(adapters)
+	return adapters
+}
+
+// convertLogxFields 将 logx.LogField 切片转换为 map
+func convertLogxFields(fields ...logx.LogField) map[string]interface{} {
+	return writer.ConvertFields(adaptLogxFields(fields...))
 }
 
 // extractLogxFields 从 logx.LogField 中提取 trace、span、duration 特殊字段
 func extractLogxFields(fields ...logx.LogField) (trace, span, duration string) {
-	adapters := make([]writer.FieldAccessor, len(fields))
-	for i, field := range fields {
-		adapters[i] = logxFieldAdapter{field: field}
-	}
-	return writer.ExtractFields(adapters)
+	return writer.ExtractFields(adaptLogxFields(fields...))
 }
