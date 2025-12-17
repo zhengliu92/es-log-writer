@@ -40,7 +40,7 @@ func createLogEntry(level string, content any, fields ...logx.LogField) writer.L
 }
 
 // createSimpleLogEntry 创建简单日志条目（无字段，需要手动获取 caller）
-func createSimpleLogEntry(level string, content any, callerSkip int) writer.LogEntry {
+func createSimpleLogEntry(level string, content any) writer.LogEntry {
 	return writer.LogEntry{
 		Timestamp: time.Now().Format(time.RFC3339),
 		Level:     level,
@@ -50,7 +50,7 @@ func createSimpleLogEntry(level string, content any, callerSkip int) writer.LogE
 
 // Alert 实现 logx.Writer 接口
 func (a *Adapter) Alert(v any) {
-	a.AddEntry(createSimpleLogEntry("alert", v, 3))
+	a.AddEntry(createSimpleLogEntry("alert", v))
 }
 
 // Debug 实现 logx.Writer 接口
@@ -70,7 +70,7 @@ func (a *Adapter) Info(v any, fields ...logx.LogField) {
 
 // Severe 实现 logx.Writer 接口
 func (a *Adapter) Severe(v any) {
-	a.AddEntry(createSimpleLogEntry("severe", v, 3))
+	a.AddEntry(createSimpleLogEntry("severe", v))
 }
 
 // Slow 实现 logx.Writer 接口
@@ -84,7 +84,7 @@ func (a *Adapter) Stack(v any) {
 	n := runtime.Stack(buf, false)
 	stackTrace := string(buf[:n])
 
-	entry := createSimpleLogEntry("stack", v, 3)
+	entry := createSimpleLogEntry("stack", v)
 	entry.Fields = map[string]interface{}{
 		"stack": stackTrace,
 	}
