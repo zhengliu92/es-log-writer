@@ -36,3 +36,15 @@ func convertLogxFields(fields ...logx.LogField) map[string]interface{} {
 func extractLogxFields(fields ...logx.LogField) (trace, span, duration string) {
 	return writer.ExtractFields(adaptLogxFields(fields...))
 }
+
+// extractCaller 从 logx.LogField 中提取 caller 字段
+func extractCaller(fields ...logx.LogField) string {
+	for _, field := range fields {
+		if field.Key == "caller" {
+			if caller, ok := field.Value.(string); ok {
+				return caller
+			}
+		}
+	}
+	return ""
+}

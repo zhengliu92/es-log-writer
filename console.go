@@ -15,11 +15,10 @@ func NewConsoleWriter() *ConsoleWriter {
 	return &ConsoleWriter{}
 }
 
-// Log 写入日志（核心方法）
-func (c *ConsoleWriter) Log(level string, content any, fields ...LogField) {
+// log 内部日志方法，接收 caller 参数
+func (c *ConsoleWriter) log(level string, content any, caller string, fields ...LogField) {
 	timestamp := time.Now().Format("2006-01-02 15:04:05.000")
 	contentStr := FormatContent(content)
-	caller := GetCaller(2) // skip Log and public methods (Info/Error/Debug/Warn)
 
 	var parts []string
 	parts = append(parts, fmt.Sprintf("[%s]", strings.ToUpper(level)))
@@ -54,24 +53,29 @@ func (c *ConsoleWriter) Log(level string, content any, fields ...LogField) {
 	}
 }
 
+// Log 写入日志（公开方法，供外部直接调用）
+func (c *ConsoleWriter) Log(level string, content any, fields ...LogField) {
+	c.log(level, content, GetCaller(2), fields...)
+}
+
 // Info 写入 info 级别日志
 func (c *ConsoleWriter) Info(content any, fields ...LogField) {
-	c.Log("info", content, fields...)
+	c.log("info", content, GetCaller(2), fields...)
 }
 
 // Error 写入 error 级别日志
 func (c *ConsoleWriter) Error(content any, fields ...LogField) {
-	c.Log("error", content, fields...)
+	c.log("error", content, GetCaller(2), fields...)
 }
 
 // Debug 写入 debug 级别日志
 func (c *ConsoleWriter) Debug(content any, fields ...LogField) {
-	c.Log("debug", content, fields...)
+	c.log("debug", content, GetCaller(2), fields...)
 }
 
 // Warn 写入 warn 级别日志
 func (c *ConsoleWriter) Warn(content any, fields ...LogField) {
-	c.Log("warn", content, fields...)
+	c.log("warn", content, GetCaller(2), fields...)
 }
 
 // Close 关闭写入器（控制台 Writer 不需要关闭）

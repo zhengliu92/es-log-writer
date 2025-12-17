@@ -73,6 +73,7 @@ func (c *ConsoleWriter) log(level string, v any, fields ...logx.LogField) {
 	parts = append(parts, timestamp)
 	parts = append(parts, content)
 
+	// 输出其他字段
 	for _, field := range fields {
 		parts = append(parts, fmt.Sprintf("%s=%v", field.Key, field.Value))
 	}

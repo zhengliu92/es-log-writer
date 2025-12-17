@@ -79,14 +79,13 @@ func NewElasticsearchWriter(config *Config) (*ElasticsearchWriter, error) {
 	return w, nil
 }
 
-// Log 写入日志（核心方法）
-func (w *ElasticsearchWriter) Log(level string, content any, fields ...LogField) {
+// log 内部日志方法，接收 caller 参数
+func (w *ElasticsearchWriter) log(level string, content any, fields ...LogField) {
 	trace, span, duration := extractFields(fields)
 	entry := LogEntry{
 		Timestamp: time.Now().Format(time.RFC3339),
 		Level:     level,
 		Content:   FormatContent(content),
-		Caller:    GetCaller(2),
 		Duration:  duration,
 		Trace:     trace,
 		Span:      span,
@@ -95,24 +94,29 @@ func (w *ElasticsearchWriter) Log(level string, content any, fields ...LogField)
 	w.AddEntry(entry)
 }
 
+// Log 写入日志（公开方法，供外部直接调用）
+func (w *ElasticsearchWriter) Log(level string, content any, fields ...LogField) {
+	w.log(level, content, fields...)
+}
+
 // Info 写入 info 级别日志
 func (w *ElasticsearchWriter) Info(content any, fields ...LogField) {
-	w.Log("info", content, fields...)
+	w.log("info", content, fields...)
 }
 
 // Error 写入 error 级别日志
 func (w *ElasticsearchWriter) Error(content any, fields ...LogField) {
-	w.Log("error", content, fields...)
+	w.log("error", content, fields...)
 }
 
 // Debug 写入 debug 级别日志
 func (w *ElasticsearchWriter) Debug(content any, fields ...LogField) {
-	w.Log("debug", content, fields...)
+	w.log("debug", content, fields...)
 }
 
 // Warn 写入 warn 级别日志
 func (w *ElasticsearchWriter) Warn(content any, fields ...LogField) {
-	w.Log("warn", content, fields...)
+	w.log("warn", content, fields...)
 }
 
 // Ping 检查 Elasticsearch 连接是否正常

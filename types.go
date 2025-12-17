@@ -34,7 +34,6 @@ type LogEntry struct {
 	Timestamp string                 `json:"@timestamp"`
 	Level     string                 `json:"level"`
 	Content   string                 `json:"content"`
-	Caller    string                 `json:"caller,omitempty"`
 	Duration  string                 `json:"duration,omitempty"`
 	Trace     string                 `json:"trace,omitempty"`
 	Span      string                 `json:"span,omitempty"`
