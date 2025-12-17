@@ -85,8 +85,8 @@ func (w *ElasticsearchWriter) Log(level string, content any, fields ...LogField)
 	entry := LogEntry{
 		Timestamp: time.Now().Format(time.RFC3339),
 		Level:     level,
-		Content:   formatContent(content),
-		Caller:    getCaller(2),
+		Content:   FormatContent(content),
+		Caller:    GetCaller(2),
 		Duration:  duration,
 		Trace:     trace,
 		Span:      span,

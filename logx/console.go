@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
+	writer "github.com/zhengliu92/es-log-writer"
 )
 
 // ConsoleWriter 控制台 Writer，将日志输出到标准输出
@@ -65,7 +66,7 @@ func (c *ConsoleWriter) Close() error {
 // writeLog 辅助方法，格式化并输出日志
 func (c *ConsoleWriter) writeLog(level string, v any, fields ...logx.LogField) {
 	timestamp := time.Now().Format("2006-01-02 15:04:05.000")
-	content := formatContent(v)
+	content := writer.FormatContent(v)
 
 	var parts []string
 	parts = append(parts, fmt.Sprintf("[%s]", level))

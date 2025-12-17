@@ -7,8 +7,24 @@ import (
 	"time"
 )
 
+// FieldAccessor 字段访问接口，用于统一处理不同类型的字段
+type FieldAccessor interface {
+	GetKey() string
+	GetValue() interface{}
+}
+
+// LogField 实现 FieldAccessor 接口
+func (f LogField) GetKey() string {
+	return f.Key
+}
+
+// LogField 实现 FieldAccessor 接口
+func (f LogField) GetValue() interface{} {
+	return f.Value
+}
+
 // formatContent 格式化内容为字符串
-func formatContent(v any) string {
+func FormatContent(v any) string {
 	switch val := v.(type) {
 	case string:
 		return val
@@ -21,37 +37,57 @@ func formatContent(v any) string {
 
 // formatFields 将 LogField 切片转换为 map
 func formatFields(fields ...LogField) map[string]interface{} {
+	return convertFields(fields)
+}
+
+// convertFields 通用的字段转换函数，接受 FieldAccessor 切片
+func convertFields[T FieldAccessor](fields []T) map[string]interface{} {
 	if len(fields) == 0 {
 		return nil
 	}
 	result := make(map[string]interface{})
 	for _, field := range fields {
-		result[field.Key] = field.Value
+		result[field.GetKey()] = field.GetValue()
 	}
 	return result
 }
 
+// ConvertFields 导出的通用字段转换函数，接受 FieldAccessor 切片
+func ConvertFields(fields []FieldAccessor) map[string]interface{} {
+	return convertFields(fields)
+}
+
 // extractSpecialFields 从字段中提取 trace、span、duration 特殊字段
 func extractSpecialFields(fields ...LogField) (trace, span, duration string) {
+	return extractFields(fields)
+}
+
+// extractFields 通用的字段提取函数，接受 FieldAccessor 切片
+func extractFields[T FieldAccessor](fields []T) (trace, span, duration string) {
 	for _, field := range fields {
-		switch field.Key {
+		switch field.GetKey() {
 		case "trace":
-			trace = fmt.Sprintf("%v", field.Value)
+			trace = fmt.Sprintf("%v", field.GetValue())
 		case "span":
-			span = fmt.Sprintf("%v", field.Value)
+			span = fmt.Sprintf("%v", field.GetValue())
 		case "duration":
-			if dur, ok := field.Value.(time.Duration); ok {
+			if dur, ok := field.GetValue().(time.Duration); ok {
 				duration = dur.String()
 			} else {
-				duration = fmt.Sprintf("%v", field.Value)
+				duration = fmt.Sprintf("%v", field.GetValue())
 			}
 		}
 	}
 	return
 }
 
+// ExtractFields 导出的通用字段提取函数，接受 FieldAccessor 切片
+func ExtractFields(fields []FieldAccessor) (trace, span, duration string) {
+	return extractFields(fields)
+}
+
 // getCaller 获取调用者信息
-func getCaller(skip int) string {
+func GetCaller(skip int) string {
 	_, file, line, ok := runtime.Caller(skip + 1)
 	if !ok {
 		return ""

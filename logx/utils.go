@@ -1,66 +1,37 @@
 package logx
 
 import (
-	"fmt"
-	"runtime"
-	"strings"
-	"time"
-
 	"github.com/zeromicro/go-zero/core/logx"
+	writer "github.com/zhengliu92/es-log-writer"
 )
 
-// formatContent 格式化内容为字符串
-func formatContent(v any) string {
-	switch val := v.(type) {
-	case string:
-		return val
-	case error:
-		return val.Error()
-	default:
-		return fmt.Sprintf("%v", val)
-	}
+// logxFieldAdapter 适配 logx.LogField 到 writer.FieldAccessor 接口
+type logxFieldAdapter struct {
+	field logx.LogField
+}
+
+func (a logxFieldAdapter) GetKey() string {
+	return a.field.Key
+}
+
+func (a logxFieldAdapter) GetValue() interface{} {
+	return a.field.Value
 }
 
 // convertLogxFields 将 logx.LogField 切片转换为 map
 func convertLogxFields(fields ...logx.LogField) map[string]interface{} {
-	if len(fields) == 0 {
-		return nil
+	adapters := make([]writer.FieldAccessor, len(fields))
+	for i, field := range fields {
+		adapters[i] = logxFieldAdapter{field: field}
 	}
-	result := make(map[string]interface{})
-	for _, field := range fields {
-		result[field.Key] = field.Value
-	}
-	return result
+	return writer.ConvertFields(adapters)
 }
 
 // extractLogxFields 从 logx.LogField 中提取 trace、span、duration 特殊字段
 func extractLogxFields(fields ...logx.LogField) (trace, span, duration string) {
-	for _, field := range fields {
-		switch field.Key {
-		case "trace":
-			trace = fmt.Sprintf("%v", field.Value)
-		case "span":
-			span = fmt.Sprintf("%v", field.Value)
-		case "duration":
-			if dur, ok := field.Value.(time.Duration); ok {
-				duration = dur.String()
-			} else {
-				duration = fmt.Sprintf("%v", field.Value)
-			}
-		}
+	adapters := make([]writer.FieldAccessor, len(fields))
+	for i, field := range fields {
+		adapters[i] = logxFieldAdapter{field: field}
 	}
-	return
-}
-
-// getCaller 获取调用者信息
-func getCaller(skip int) string {
-	_, file, line, ok := runtime.Caller(skip + 1)
-	if !ok {
-		return ""
-	}
-	parts := strings.Split(file, "/")
-	if len(parts) > 0 {
-		file = parts[len(parts)-1]
-	}
-	return fmt.Sprintf("%s:%d", file, line)
+	return writer.ExtractFields(adapters)
 }

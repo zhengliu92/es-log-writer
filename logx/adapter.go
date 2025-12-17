@@ -30,8 +30,8 @@ func (a *Adapter) Alert(v any) {
 	entry := writer.LogEntry{
 		Timestamp: time.Now().Format(time.RFC3339),
 		Level:     "alert",
-		Content:   formatContent(v),
-		Caller:    getCaller(1),
+		Content:   writer.FormatContent(v),
+		Caller:    writer.GetCaller(1),
 	}
 	a.AddEntry(entry)
 }
@@ -42,8 +42,8 @@ func (a *Adapter) Debug(v any, fields ...logx.LogField) {
 	entry := writer.LogEntry{
 		Timestamp: time.Now().Format(time.RFC3339),
 		Level:     "debug",
-		Content:   formatContent(v),
-		Caller:    getCaller(1),
+		Content:   writer.FormatContent(v),
+		Caller:    writer.GetCaller(1),
 		Duration:  duration,
 		Trace:     trace,
 		Span:      span,
@@ -58,8 +58,8 @@ func (a *Adapter) Error(v any, fields ...logx.LogField) {
 	entry := writer.LogEntry{
 		Timestamp: time.Now().Format(time.RFC3339),
 		Level:     "error",
-		Content:   formatContent(v),
-		Caller:    getCaller(1),
+		Content:   writer.FormatContent(v),
+		Caller:    writer.GetCaller(1),
 		Duration:  duration,
 		Trace:     trace,
 		Span:      span,
@@ -74,8 +74,8 @@ func (a *Adapter) Info(v any, fields ...logx.LogField) {
 	entry := writer.LogEntry{
 		Timestamp: time.Now().Format(time.RFC3339),
 		Level:     "info",
-		Content:   formatContent(v),
-		Caller:    getCaller(1),
+		Content:   writer.FormatContent(v),
+		Caller:    writer.GetCaller(1),
 		Duration:  duration,
 		Trace:     trace,
 		Span:      span,
@@ -89,8 +89,8 @@ func (a *Adapter) Severe(v any) {
 	entry := writer.LogEntry{
 		Timestamp: time.Now().Format(time.RFC3339),
 		Level:     "severe",
-		Content:   formatContent(v),
-		Caller:    getCaller(1),
+		Content:   writer.FormatContent(v),
+		Caller:    writer.GetCaller(1),
 	}
 	a.AddEntry(entry)
 }
@@ -101,8 +101,8 @@ func (a *Adapter) Slow(v any, fields ...logx.LogField) {
 	entry := writer.LogEntry{
 		Timestamp: time.Now().Format(time.RFC3339),
 		Level:     "slow",
-		Content:   formatContent(v),
-		Caller:    getCaller(1),
+		Content:   writer.FormatContent(v),
+		Caller:    writer.GetCaller(1),
 		Duration:  duration,
 		Trace:     trace,
 		Span:      span,
@@ -120,8 +120,8 @@ func (a *Adapter) Stack(v any) {
 	entry := writer.LogEntry{
 		Timestamp: time.Now().Format(time.RFC3339),
 		Level:     "stack",
-		Content:   formatContent(v),
-		Caller:    getCaller(1),
+		Content:   writer.FormatContent(v),
+		Caller:    writer.GetCaller(1),
 		Fields: map[string]interface{}{
 			"stack": stackTrace,
 		},
@@ -135,8 +135,8 @@ func (a *Adapter) Stat(v any, fields ...logx.LogField) {
 	entry := writer.LogEntry{
 		Timestamp: time.Now().Format(time.RFC3339),
 		Level:     "stat",
-		Content:   formatContent(v),
-		Caller:    getCaller(1),
+		Content:   writer.FormatContent(v),
+		Caller:    writer.GetCaller(1),
 		Duration:  duration,
 		Trace:     trace,
 		Span:      span,
