@@ -25,7 +25,7 @@ func main() {
 	}
 
 	// 创建 logx 适配器
-	adapter, err := logxadapter.NewAdapter(config)
+	adapter, err := logxadapter.NewEsAdapter(config)
 	if err != nil {
 		panic(err)
 	}

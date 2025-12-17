@@ -16,8 +16,8 @@ type Adapter struct {
 	*writer.ElasticsearchWriter
 }
 
-// NewAdapter 创建一个适配 logx.Writer 的写入器
-func NewAdapter(config *writer.Config) (*Adapter, error) {
+// NewEsAdapter 创建一个适配 logx.Writer 的 Elasticsearch 写入器
+func NewEsAdapter(config *writer.Config) (*Adapter, error) {
 	w, err := writer.NewElasticsearchWriter(config)
 	if err != nil {
 		return nil, err

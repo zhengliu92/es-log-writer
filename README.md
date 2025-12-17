@@ -81,7 +81,7 @@ func main() {
     }
     
     // 创建 logx 适配器
-    adapter, err := logxadapter.NewAdapter(config)
+    adapter, err := logxadapter.NewEsAdapter(config)
     if err != nil {
         panic(err)
     }
@@ -122,7 +122,7 @@ func main() {
     }
     
     // 创建 Elasticsearch 适配器
-    adapter, err := logxadapter.NewAdapter(config)
+    adapter, err := logxadapter.NewEsAdapter(config)
     if err != nil {
         panic(err)
     }
@@ -206,7 +206,7 @@ w.Close()
 
 ```go
 // 创建 ES 适配器
-adapter, err := logxadapter.NewAdapter(config)
+adapter, err := logxadapter.NewEsAdapter(config)
 
 // 创建控制台 Writer
 consoleWriter := logxadapter.NewConsoleWriter()
