@@ -19,10 +19,14 @@ func NewConsoleWriter() *ConsoleWriter {
 func (c *ConsoleWriter) Log(level string, content any, fields ...LogField) {
 	timestamp := time.Now().Format("2006-01-02 15:04:05.000")
 	contentStr := FormatContent(content)
+	caller := GetCaller(2) // skip Log and public methods (Info/Error/Debug/Warn)
 
 	var parts []string
 	parts = append(parts, fmt.Sprintf("[%s]", strings.ToUpper(level)))
 	parts = append(parts, timestamp)
+	if caller != "" {
+		parts = append(parts, caller)
+	}
 	parts = append(parts, contentStr)
 
 	trace, span, duration := extractFields(fields)
